@@ -183,7 +183,7 @@
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:layout_marginStart="4dp"
-                    android:textColor="#8CFFFFFF"
+                    android:textColor="#B34A2E1B"
                     android:textSize="12sp"
                     android:fontFamily="@font/outfit_medium"
                     android:letterSpacing="0.22"
@@ -201,7 +201,7 @@
                         android:layout_height="wrap_content"
                         android:format12Hour="h:mm"
                         android:format24Hour="HH:mm"
-                        android:textColor="#FFFFFFFF"
+                        android:textColor="#FF4A2E1B"
                         android:textSize="52sp"
                         android:fontFamily="@font/outfit_light"
                         android:letterSpacing="-0.04"
@@ -216,7 +216,7 @@
                         android:layout_marginBottom="8dp"
                         android:format12Hour="a"
                         android:format24Hour=""
-                        android:textColor="#B3FFFFFF"
+                        android:textColor="#CC4A2E1B"
                         android:textSize="15sp"
                         android:fontFamily="@font/outfit_medium"
                         android:letterSpacing="0.08"
@@ -229,7 +229,7 @@
                         android:layout_marginStart="16dp"
                         android:layout_marginEnd="16dp"
                         android:layout_marginBottom="8dp"
-                        android:background="#33FFFFFF" />
+                        android:background="#404A2E1B" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -247,7 +247,7 @@
                             android:layout_height="wrap_content"
                             android:singleLine="true"
                             android:ellipsize="end"
-                            android:textColor="#E6FFFFFF"
+                            android:textColor="#E64A2E1B"
                             android:textSize="17sp"
                             android:fontFamily="@font/outfit_regular"
                             android:letterSpacing="0.02"
@@ -265,7 +265,7 @@
                             android:ellipsize="end"
                             android:format12Hour="@string/date_format_home"
                             android:format24Hour="@string/date_format_home"
-                            android:textColor="#A6FFFFFF"
+                            android:textColor="#D94A2E1B"
                             android:textSize="14sp"
                             android:fontFamily="@font/outfit_regular"
                             android:letterSpacing="0.14"
@@ -287,7 +287,7 @@
                 android:layout_marginTop="2dp"
                 android:singleLine="true"
                 android:ellipsize="end"
-                android:textColor="#D9FFFFFF"
+                android:textColor="#D94A2E1B"
                 android:textSize="14sp"
                 android:fontFamily="@font/outfit_medium"
                 android:letterSpacing="0.04"
@@ -374,4 +374,195 @@
         android:layout_height="10dp"
         android:alpha="0"
         android:importantForAccessibility="no" />
+
+    <!-- Prayer Times Panel (Jadwal Sholat) -->
+    <LinearLayout
+        android:id="@+id/prayerPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="42dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:focusable="true"
+        android:clickable="true"
+        android:background="@drawable/prayer_panel_bg"
+        android:paddingStart="36dp"
+        android:paddingEnd="36dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="20dp"
+        android:visibility="gone">
+
+        <!-- Header: Next Prayer & City -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/prayerNextTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="JADWAL SHOLAT • BOGOR"
+                android:textColor="#CCFFFFFF"
+                android:textSize="13sp"
+                android:fontFamily="@font/outfit_medium"
+                android:letterSpacing="0.20"
+                android:textAllCaps="true" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
+                android:background="#33FFFFFF" />
+
+            <TextView
+                android:id="@+id/prayerNextCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Menuju Subuh • 04:12"
+                android:textColor="#FFFFFFFF"
+                android:textSize="14sp"
+                android:fontFamily="@font/outfit_medium"
+                android:letterSpacing="0.04" />
+        </LinearLayout>
+
+        <!-- 5 Prayer times horizontal row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- Subuh -->
+            <LinearLayout
+                android:id="@+id/prayerSubuh"
+                style="@style/PrayerItem">
+                <TextView
+                    android:id="@+id/prayerSubuhName"
+                    style="@style/PrayerItemName"
+                    android:text="SUBUH" />
+                <TextView
+                    android:id="@+id/prayerSubuhTime"
+                    style="@style/PrayerItemTime"
+                    android:text="04:12" />
+            </LinearLayout>
+
+            <!-- Dzuhur -->
+            <LinearLayout
+                android:id="@+id/prayerDzuhur"
+                style="@style/PrayerItem">
+                <TextView
+                    android:id="@+id/prayerDzuhurName"
+                    style="@style/PrayerItemName"
+                    android:text="DZUHUR" />
+                <TextView
+                    android:id="@+id/prayerDzuhurTime"
+                    style="@style/PrayerItemTime"
+                    android:text="11:39" />
+            </LinearLayout>
+
+            <!-- Ashar -->
+            <LinearLayout
+                android:id="@+id/prayerAshar"
+                style="@style/PrayerItem">
+                <TextView
+                    android:id="@+id/prayerAsharName"
+                    style="@style/PrayerItemName"
+                    android:text="ASHAR" />
+                <TextView
+                    android:id="@+id/prayerAsharTime"
+                    style="@style/PrayerItemTime"
+                    android:text="14:49" />
+            </LinearLayout>
+
+            <!-- Maghrib -->
+            <LinearLayout
+                android:id="@+id/prayerMaghrib"
+                style="@style/PrayerItem">
+                <TextView
+                    android:id="@+id/prayerMaghribName"
+                    style="@style/PrayerItemName"
+                    android:text="MAGHRIB" />
+                <TextView
+                    android:id="@+id/prayerMaghribTime"
+                    style="@style/PrayerItemTime"
+                    android:text="17:48" />
+            </LinearLayout>
+
+            <!-- Isya -->
+            <LinearLayout
+                android:id="@+id/prayerIsya"
+                style="@style/PrayerItem">
+                <TextView
+                    android:id="@+id/prayerIsyaName"
+                    style="@style/PrayerItemName"
+                    android:text="ISYA" />
+                <TextView
+                    android:id="@+id/prayerIsyaTime"
+                    style="@style/PrayerItemTime"
+                    android:text="18:58" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Adzan Notification Overlay -->
+    <LinearLayout
+        android:id="@+id/adhanOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E6000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="48dp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="اللهُ أَكْبَرُ اللهُ أَكْبَرُ"
+            android:textColor="#E6FFFFFF"
+            android:textSize="38sp"
+            android:fontFamily="@font/outfit_light"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/adhanPrayerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WAKTUNYA SHOLAT MAGHRIB"
+            android:textColor="#FFFFFFFF"
+            android:textSize="44sp"
+            android:fontFamily="@font/outfit_light"
+            android:letterSpacing="0.02"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/adhanCity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wilayah Bogor dan Sekitarnya"
+            android:textColor="#B3FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="@font/outfit_regular"
+            android:layout_marginBottom="32dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tekan tombol apa saja pada remote untuk mematikan suara adzan"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp"
+            android:fontFamily="@font/outfit_regular"
+            android:background="@drawable/prayer_chip_bg"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp" />
+    </LinearLayout>
 </FrameLayout>

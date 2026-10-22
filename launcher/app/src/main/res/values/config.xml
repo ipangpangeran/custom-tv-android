@@ -196,4 +196,12 @@
          Live TV window does not keep the screen on (CVTE): there the system screensaver would start in the
          middle of a programme. Can also be set with "home_idle_clock_minutes": 10 in a theme's config.json. -->
     <integer name="home_idle_clock_minutes">0</integer>
+
+    <!-- Hide app tiles and dock on Home for a clean photo / ambient screen. Apps can still be accessed via Library button. -->
+    <bool name="hide_apps">false</bool>
+
+    <!-- Show prayer schedule (Jadwal Sholat) bar -->
+    <bool name="prayer_times">false</bool>
+    <string name="prayer_city" translatable="false">Bogor</string>
+    <bool name="adhan_enabled">true</bool>
 </resources>

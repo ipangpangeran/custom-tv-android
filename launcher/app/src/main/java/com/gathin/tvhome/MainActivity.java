@@ -138,6 +138,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int glassAccent;
     private int ambientColor = -1;
     private ValueAnimator ambientAnimator;
+    private Config cfg;
     private boolean heroShown;
     private boolean animations;
     private boolean advancedEffects;
@@ -154,6 +155,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    private LinearLayout prayerPanel;
+    private TextView prayerNextTitle, prayerNextCountdown;
+    private LinearLayout[] prayerItemViews;
+    private TextView[] prayerTimeTextViews;
+    private View adhanOverlay;
+    private TextView adhanPrayerName, adhanCity;
+    private AdhanPlayer adhanPlayer;
+    private String lastAdhanPlayed = "";
+    private final Handler prayerHandler = new Handler(Looper.getMainLooper());
+    private final Runnable prayerTicker = new Runnable() {
+        @Override
+        public void run() {
+            updatePrayerTimes();
+            prayerHandler.postDelayed(this, 10_000L);
+        }
+    };
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -304,7 +321,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setContentView(R.layout.activity_main);
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
-        Config cfg = Config.load(this);
+        cfg = Config.load(this);
         settingsKeycodes = cfg.settingsKeycodes;
         settingsKeyPanel = cfg.settingsKeyPanel;
         COLUMNS = cfg.columns;
@@ -526,7 +543,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             onLibraryRequested();
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
-        btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        btnLibraryTop.setVisibility((cfg.libraryButton && cfg.appLibrary) || cfg.hideApps ? View.VISIBLE : View.GONE);
         iconOnlyButtons = cfg.iconOnlyButtons;
         wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0;
         if (iconOnlyButtons) {
@@ -546,6 +563,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (cfg.hideApps) {
+                    if (prayerPanel != null && prayerPanel.getVisibility() == View.VISIBLE) {
+                        prayerPanel.requestFocus();
+                        return true;
+                    }
+                    return true;
+                }
                 // Back to the dock tile Up came from, not wherever the focus finder lands.
                 focusTile(lastFocused % COLUMNS);
                 return true;
@@ -569,6 +593,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+
+        setupPrayerTimes();
+        if (cfg.hideApps) {
+            grid.setVisibility(View.GONE);
+            hero.setVisibility(View.GONE);
+            glass.setVisibility(View.GONE);
+            btnLibraryTop.setVisibility(View.VISIBLE);
+            if (prayerPanel != null && prayerPanel.getVisibility() == View.VISIBLE) {
+                btnInputs.setNextFocusDownId(R.id.prayerPanel);
+                btnWifi.setNextFocusDownId(R.id.prayerPanel);
+                btnReorder.setNextFocusDownId(R.id.prayerPanel);
+                btnLibraryTop.setNextFocusDownId(R.id.prayerPanel);
+                btnSettings.setNextFocusDownId(R.id.prayerPanel);
+            }
+        }
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -784,6 +823,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        dismissAdhan();
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
@@ -847,6 +887,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (adhanPlayer != null) adhanPlayer.stop();
+        prayerHandler.removeCallbacks(prayerTicker);
         wallpaperPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
@@ -889,6 +931,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (adhanOverlay != null && adhanOverlay.getVisibility() == View.VISIBLE) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                dismissAdhan();
+                return true;
+            }
+        }
         if (handleSettingsKey(event)) return true;
         if (!reordering) return super.dispatchKeyEvent(event);
         if (dockEditing) return dispatchDockEdit(event);
@@ -1797,8 +1845,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The first top-bar button after Inputs that is shown: the network pill, Reorder, then Settings (always there). */
     private View firstTopButton() {
+        if (btnInputs.getVisibility() == View.VISIBLE) return btnInputs;
         if (btnWifi.getVisibility() == View.VISIBLE) return btnWifi;
         if (btnReorder.getVisibility() == View.VISIBLE) return btnReorder;
+        if (btnLibraryTop.getVisibility() == View.VISIBLE) return btnLibraryTop;
         return findViewById(R.id.btnSettings);
     }
 
@@ -1857,6 +1907,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void focusTile(int position) {
         libraryFocusPending = false;
         cancelPendingFocusScroll();
+        if (cfg.hideApps) {
+            if (prayerPanel != null && prayerPanel.getVisibility() == View.VISIBLE) {
+                prayerPanel.requestFocus();
+            } else {
+                firstTopButton().requestFocus();
+            }
+            return;
+        }
         if (adapter.appCount() == 0) {
             if (adapter.isLibraryAt(0)) focusLibrary();
             else firstTopButton().requestFocus();
@@ -2670,6 +2728,172 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return getString(R.string.card_state_new_label);
             default:
                 return getString(R.string.card_state_new);
+        }
+    }
+
+    private void setupPrayerTimes() {
+        prayerPanel = findViewById(R.id.prayerPanel);
+        prayerNextTitle = findViewById(R.id.prayerNextTitle);
+        prayerNextCountdown = findViewById(R.id.prayerNextCountdown);
+
+        prayerItemViews = new LinearLayout[]{
+                findViewById(R.id.prayerSubuh),
+                findViewById(R.id.prayerDzuhur),
+                findViewById(R.id.prayerAshar),
+                findViewById(R.id.prayerMaghrib),
+                findViewById(R.id.prayerIsya)
+        };
+        prayerTimeTextViews = new TextView[]{
+                findViewById(R.id.prayerSubuhTime),
+                findViewById(R.id.prayerDzuhurTime),
+                findViewById(R.id.prayerAsharTime),
+                findViewById(R.id.prayerMaghribTime),
+                findViewById(R.id.prayerIsyaTime)
+        };
+
+        adhanOverlay = findViewById(R.id.adhanOverlay);
+        adhanPrayerName = findViewById(R.id.adhanPrayerName);
+        adhanCity = findViewById(R.id.adhanCity);
+        adhanPlayer = new AdhanPlayer();
+
+        if (adhanOverlay != null) {
+            adhanOverlay.setOnClickListener(v -> dismissAdhan());
+        }
+
+        if (cfg.prayerTimes || cfg.hideApps) {
+            if (prayerPanel != null) {
+                prayerPanel.setVisibility(View.VISIBLE);
+                prayerPanel.setOnKeyListener((v, keyCode, event) -> {
+                    if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                        firstTopButton().requestFocus();
+                        return true;
+                    }
+                    if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
+                            || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+                        if (adhanPlayer != null && adhanPlayer.isPlaying()) {
+                            dismissAdhan();
+                        } else {
+                            Calendar nowCal = Calendar.getInstance();
+                            PrayerTimes.Schedule sch = PrayerTimes.getScheduleFor(nowCal, -6.5950, 106.8166, 7.0);
+                            PrayerTimes.Schedule.NextPrayer nxt = sch.getNextPrayer(nowCal.get(Calendar.HOUR_OF_DAY), nowCal.get(Calendar.MINUTE));
+                            triggerAdhan(nxt.name);
+                        }
+                        return true;
+                    }
+                    return false;
+                });
+                prayerPanel.setOnFocusChangeListener((v, focused) -> {
+                    v.animate().scaleX(focused ? 1.03f : 1.0f).scaleY(focused ? 1.03f : 1.0f).setDuration(160).start();
+                });
+            }
+            updatePrayerTimes();
+            prayerHandler.removeCallbacks(prayerTicker);
+            prayerHandler.postDelayed(prayerTicker, 10_000L);
+        }
+    }
+
+    private void updatePrayerTimes() {
+        if (prayerPanel == null) return;
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        int minute = now.get(Calendar.MINUTE);
+
+        // Coordinates for Bogor: Lat -6.5950, Long 106.8166, TZ 7.0
+        double lat = -6.5950;
+        double lng = 106.8166;
+        double tz = 7.0;
+        String city = cfg.prayerCity != null && !cfg.prayerCity.isEmpty() ? cfg.prayerCity : "Bogor";
+
+        PrayerTimes.Schedule schedule = PrayerTimes.getScheduleFor(now, lat, lng, tz);
+
+        if (prayerTimeTextViews != null && prayerTimeTextViews.length >= 5) {
+            if (prayerTimeTextViews[0] != null) prayerTimeTextViews[0].setText(schedule.subuh());
+            if (prayerTimeTextViews[1] != null) prayerTimeTextViews[1].setText(schedule.dzuhur());
+            if (prayerTimeTextViews[2] != null) prayerTimeTextViews[2].setText(schedule.ashar());
+            if (prayerTimeTextViews[3] != null) prayerTimeTextViews[3].setText(schedule.maghrib());
+            if (prayerTimeTextViews[4] != null) prayerTimeTextViews[4].setText(schedule.isya());
+        }
+
+        PrayerTimes.Schedule.NextPrayer next = schedule.getNextPrayer(hour, minute);
+        if (prayerNextTitle != null) {
+            prayerNextTitle.setText("JADWAL SHOLAT • " + city.toUpperCase(Locale.ROOT));
+        }
+        if (prayerNextCountdown != null) {
+            int hrs = next.minutesLeft / 60;
+            int mins = next.minutesLeft % 60;
+            String countdownStr;
+            if (hrs > 0) {
+                countdownStr = hrs + " jam " + mins + " menit lagi";
+            } else {
+                countdownStr = mins + " menit lagi";
+            }
+            prayerNextCountdown.setText("Menuju " + next.name + " (" + next.time + ") • " + countdownStr);
+        }
+
+        // Highlight active / next prayer chip
+        if (prayerItemViews != null) {
+            for (int i = 0; i < prayerItemViews.length; i++) {
+                if (prayerItemViews[i] != null) {
+                    if (i == next.index) {
+                        prayerItemViews[i].setBackgroundResource(R.drawable.prayer_chip_active);
+                    } else {
+                        prayerItemViews[i].setBackgroundResource(R.drawable.prayer_chip_bg);
+                    }
+                }
+            }
+        }
+
+        // Check if now is adzan time
+        if (cfg.adhanEnabled) {
+            String prayerNow = schedule.getPrayerNow(hour, minute);
+            if (prayerNow != null) {
+                String todayKey = now.get(Calendar.YEAR) + "-" + now.get(Calendar.DAY_OF_YEAR) + "_" + prayerNow;
+                if (!todayKey.equals(lastAdhanPlayed)) {
+                    lastAdhanPlayed = todayKey;
+                    triggerAdhan(prayerNow);
+                }
+            }
+        }
+    }
+
+    private void triggerAdhan(String prayerName) {
+        if (adhanOverlay != null) {
+            if (adhanPrayerName != null) {
+                if (prayerName == null || prayerName.isEmpty() || prayerName.equalsIgnoreCase("Waktu Sholat")) {
+                    adhanPrayerName.setText("WAKTU SHOLAT TIBA");
+                } else if (prayerName.toUpperCase(Locale.ROOT).startsWith("WAKTU")) {
+                    adhanPrayerName.setText(prayerName.toUpperCase(Locale.ROOT));
+                } else {
+                    adhanPrayerName.setText("WAKTUNYA SHOLAT " + prayerName.toUpperCase(Locale.ROOT));
+                }
+            }
+            if (adhanCity != null) {
+                adhanCity.setText("Wilayah " + (cfg.prayerCity != null ? cfg.prayerCity : "Bogor") + " dan Sekitarnya");
+            }
+            adhanOverlay.setVisibility(View.VISIBLE);
+            adhanOverlay.setAlpha(0f);
+            adhanOverlay.animate().alpha(1f).setDuration(400).start();
+            adhanOverlay.requestFocus();
+        }
+        if (adhanPlayer != null) {
+            boolean isSubuh = prayerName != null && prayerName.equalsIgnoreCase("Subuh");
+            adhanPlayer.play(this, isSubuh, this::dismissAdhan);
+        }
+    }
+
+    private void dismissAdhan() {
+        if (adhanOverlay != null && adhanOverlay.getVisibility() == View.VISIBLE) {
+            adhanOverlay.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+                adhanOverlay.setVisibility(View.GONE);
+                if (cfg.hideApps) {
+                    if (prayerPanel != null) prayerPanel.requestFocus();
+                    else firstTopButton().requestFocus();
+                }
+            }).start();
+        }
+        if (adhanPlayer != null && adhanPlayer.isPlaying()) {
+            adhanPlayer.stop();
         }
     }
 }

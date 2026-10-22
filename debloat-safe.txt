@@ -1,0 +1,16 @@
+# Skyworth SWTV-21AE ("Living Room TV"), Android TV 14
+# Bloatware, vendor ads, telemetry, and unneeded background services to disable
+
+# Skyworth content, ads and preloads
+com.smartdevice.leanbacklauncher.customizer  # partner config that injects rows into the home screen
+fusion.android.tv.demo                       # shop demo player (Skyworth ePop)
+com.Smartdevice.emanual                      # on-screen manual
+
+# Telemetry and feedback
+com.google.android.feedback
+com.android.tv.feedbackconsent
+
+# Background ad channels and unused services
+com.cltv.fast                                # iWedia free channels with ads; starts at boot
+com.google.android.backdrop                  # ambient screensaver
+com.google.android.tvrecommendations         # recommendation rows for the stock launcher
